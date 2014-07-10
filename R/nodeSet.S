@@ -1,6 +1,4 @@
-SkipS4Problem = FALSE
-
- #setOldClass("XPathNodeSet")
+#setOldClass("XPathNodeSet")
 setClass("XPathNodeSet", representation(ref = "externalptr"))
 
 XPathNodeSet =
@@ -16,7 +14,6 @@ function(..., els = list(...), duplicate = FALSE)
 }  
 
 
-if(!SkipS4Problem) {
 setMethod("length", "XPathNodeSet", function(x) .Call("RXSLT_getNodeSetLength", x, PACKAGE = "Sxslt"))
 
 if(!isGeneric("lapply"))
@@ -25,22 +22,15 @@ if(!isGeneric("lapply"))
 if(!isGeneric("sapply"))
   setGeneric("sapply", function(X, FUN, ..., simplify = TRUE, USE.NAMES = TRUE) standardGeneric("sapply"))
 
-setMethod("sapply", "XPathNodeSet",
-           function(X, FUN, ..., simplify = TRUE, USE.NAMES = TRUE) {
-              sapply(seq(along = X), function(i) FUN(X[[i]], ...), simplify = simplify, USE.NAMES = USE.NAMES)
-           })
-}
-
-setGeneric("lapply", function(X, FUN, ...) standardGeneric("lapply"))
 setMethod("lapply", "XPathNodeSet",
            function(X, FUN, ...) {
               lapply(seq(along = X), function(i) FUN(X[[i]], ...))
            })
 
-
-
-
-
+setMethod("sapply", "XPathNodeSet",
+           function(X, FUN, ..., simplify = TRUE, USE.NAMES = TRUE) {
+              sapply(seq(along = X), function(i) FUN(X[[i]], ...), simplify = simplify, USE.NAMES = USE.NAMES)
+           })
 
 # Should kill this off.  Not exported anymore
 "[.XPathNodeSet" <-
@@ -78,7 +68,6 @@ setMethod("[[", "XPathNodeSet",
     xmlValue(ans)
 })
 
-if(!SkipS4Problem) {
 if(!isGeneric("unlist"))
   setGeneric("unlist",
               function (x, recursive = TRUE, use.names = TRUE)  
@@ -88,8 +77,6 @@ setMethod("unlist", "XPathNodeSet",
            function (x, recursive = TRUE, use.names = TRUE)  {
             x[]
            })
-}
-
 
 setAs("XPathNodeSet", "integer",
        function(from) 

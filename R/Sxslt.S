@@ -220,7 +220,7 @@ function(doc, file = NULL, compression = 0, indent = TRUE,
  if(is.null(file))
    .Call("S_saveXMLDocToString", doc, as.character(encoding), PACKAGE = "Sxslt")
  else {
-   file = normalizePath(path.expand(as.character(file)), mustWork = FALSE)
+   file = normalizePath(path.expand(as.character(file)))
    .Call("S_saveXMLDocToFile", doc, file, as.integer(compression), PACKAGE = "Sxslt")
  }
 }  

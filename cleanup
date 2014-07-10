@@ -1,0 +1,12 @@
+#!/bin/sh
+
+cp src/Sxsltproc.bin /home/cboettig/Documents/code/thirdparty/Sxslt/..Rcheck/Sxslt/bin/
+chmod +x /home/cboettig/Documents/code/thirdparty/Sxslt/..Rcheck/Sxslt/bin/Sxsltproc
+cp src/Sxslt.so /home/cboettig/Documents/code/thirdparty/Sxslt/..Rcheck/Sxslt/libs
+
+if test ! -r /home/cboettig/Documents/code/thirdparty/Sxslt/..Rcheck/Sxslt/libSxslt.so ; then
+  ( cd /home/cboettig/Documents/code/thirdparty/Sxslt/..Rcheck/Sxslt ; ln -s Sxslt.so libSxslt.so)
+fi
+
+
+
