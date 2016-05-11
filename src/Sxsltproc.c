@@ -53,7 +53,7 @@ R_setInitialModuleFunction(SEXP v)
        R_PreserveObject(v);
 
    R_initializeModuleFunction = v;
-
+   
    return(prev);
 }
 
@@ -75,18 +75,21 @@ registerRModule(int fromR)
 
     xsltRegisterExtModule((const xmlChar *) R_URI, RXSLT_initializeR, RXSLT_shutdownR);
 
-/* This seems to be done twice, here and in RXSLT_initializeR.
-   It is called each time the module is initialized which is each time it is
+/* This seems to be done twice, here and in RXSLT_initializeR. 
+   It is called each time the module is initialized which is each time it is 
    required within the application of a stylesheet.
     registerBasicFunctions(NULL, R_URI, fromR);
 */
 }
 
-/*
+
+
+#include <libexslt/exslt.h>
+/* 
   Called from within R.  This is used when we are not running
-  in stand-alone mode, but within a regular R session and want
+  in stand-alone mode, but within a regular R session and want 
   to use XSLT with the R extensions.
-  We now call this when we load the Sxslt library regardless of
+  We now call this when we load the Sxslt library regardless of 
   which mode we are in.  There is the possibility of duplication
   which we can take care of in the near future. XXX
 */
@@ -101,8 +104,8 @@ R_registerXSLTModule(int *fromR)
 
 
 
-/* This goes stale when called from within a regular R session
-   as it changes across calls to apply a stylesheet.
+/* This goes stale when called from within a regular R session 
+   as it changes across calls to apply a stylesheet. 
 */
 static xsltTransformContextPtr transformCtxt = NULL;
 
@@ -125,9 +128,11 @@ RXSLT_Error(xmlXPathParserContextPtr ctxt, const char *msg, ...)
 void
 RXSLT_Warning(xmlXPathParserContextPtr ctxt, const char *msg)
 {
-//    //xsltTransformError(xsltXPathGetTransformContext(ctxt), NULL, xsltXPathGetTransformContext(ctxt)->insert, msg);
-//    PROBLEM msg
-//	WARN;
+/*XXX */
+//    xsltTransformError(xsltXPathGetTransformContext(ctxt), NULL, xsltXPathGetTransformContext(ctxt)->insert, msg);
+    Rf_warning(msg);
+    /* PROBLEM msg
+       WARN; */
 }
 
 
@@ -143,7 +148,7 @@ R_xslError(SEXP msg, SEXP isError, SEXP r_ctxt)
 	xslCtxt = transformCtxt;
     }
     /* xsltTransformError(xsltXPathGetTransformContext(ctxt), NULL, xsltXPathGetTransformContext(ctxt)->insert, buf); */
-    RXSLT_Error(ctxt, CHAR(STRING_ELT(msg, 0)));
+    RXSLT_Error(ctxt, CHAR(STRING_ELT(msg, 0))); 
 
     if(LOGICAL(isError)[0])
 	xslCtxt->state = XSLT_STATE_STOPPED; /*  XSLT_STATE_ERROR  or stopped.*/
@@ -253,7 +258,7 @@ RXSLT_callConvert(xmlXPathParserContextPtr ctxt, int nargs, int leaveAsRObject)
       const char *realFunName = colon;
       char tmp[300], *p = tmp;
       do {
-	  p[0] = ':';
+	  p[0] = ':'; 
 	  p++;
 	  realFunName++;
       } while(realFunName[0] == ':');
@@ -270,13 +275,13 @@ RXSLT_callConvert(xmlXPathParserContextPtr ctxt, int nargs, int leaveAsRObject)
          but using R_tryEval(), we should be gettting back to here.
       */
       fun = R_tryEval(e, R_GlobalEnv, &errorOccurred);
-      if(errorOccurred)
+      if(errorOccurred) 
           RXSLT_Error(ctxt, "can't find R function %s", (char *) funName);
 
       UNPROTECT(1);
   }
 
-  if(TYPEOF(fun) != CLOSXP && /*???*/ TYPEOF(fun) != FUNSXP && TYPEOF(fun) != BUILTINSXP)
+  if(TYPEOF(fun) != CLOSXP && /*???*/ TYPEOF(fun) != FUNSXP && TYPEOF(fun) != BUILTINSXP) 
       RXSLT_Error(ctxt, "%s does not correspond to an R function (%d)", funName, TYPEOF(fun));
 
 
@@ -298,7 +303,7 @@ RXSLT_callConvert(xmlXPathParserContextPtr ctxt, int nargs, int leaveAsRObject)
   }
 
   for(i = 1 ; i < nargs; i++) {
-    obj = xpathArgs[i];
+    obj = xpathArgs[i]; 
     SETCAR(tmp, convertFromXPath(ctxt, obj));
     tmp = CDR(tmp);
   }
@@ -362,14 +367,14 @@ RXSLT_init(xmlXPathParserContextPtr ctxt, int nargs)
     fprintf(stderr, "in RXSLT_init %d\n", nargs);fflush(stderr);
 #endif
     if(nargs == 0) {
-       argc = sizeof(defaultArgs)/sizeof(defaultArgs[0]);
+       argc = sizeof(defaultArgs)/sizeof(defaultArgs[0]);   
        args = (char **)defaultArgs;
     } else {
 	args = (char **) malloc((nargs+1) * sizeof(char*));
         args[0] = strdup("Rxsltproc");
         argc = nargs+1;
         for(i = 0; i < nargs; i++) {
-            xmlXPathObjectPtr obj = valuePop(ctxt);
+            xmlXPathObjectPtr obj = valuePop(ctxt); 
             if(obj->type) {
 		args[i+1] = strdup(xmlXPathCastToString(obj));
 	    }
@@ -383,7 +388,7 @@ RXSLT_init(xmlXPathParserContextPtr ctxt, int nargs)
     if(mustFree) {
         for(i = 0; i < nargs+1; i++) {
 	    free(args[i]);
-	}
+	}      
         free(args);
     }
 
@@ -404,7 +409,7 @@ int
 loadXSLPackage(void)
 {
   USER_OBJECT_ e, fun, tmp;
-  int error;
+  int isError;
 
   PROTECT(fun = Rf_findFun(Rf_install("library"), R_GlobalEnv));
   PROTECT(e = allocVector(LANGSXP, 2));
@@ -412,13 +417,16 @@ loadXSLPackage(void)
   SETCAR(e, fun);
   SETCAR(CDR(e), tmp = NEW_CHARACTER(1));
   SET_VECTOR_ELT(tmp, 0, COPY_TO_USER_STRING("Sxslt"));
-  R_tryEval(e, R_GlobalEnv, &error);
-  if(error) {
+  R_tryEval(e, R_GlobalEnv, &isError);
+  if(isError) {
+      Rf_error("Couldn't load Sxslt package. Check the setting of R_LIBS");
+/*
       fprintf(stderr, "Couldn't load Sxslt package. Check the setting of R_LIBS\n");
       fflush(stderr);
+*/
   }
 
-
+   
   UNPROTECT(2);
   return(TRUE);
 }
@@ -427,8 +435,8 @@ loadXSLPackage(void)
 void
 RXSLT_callNamedFunction(const char *name, xmlXPathParserContextPtr ctxt, int nargs, int leaveAsRObject)
 {
-  USER_OBJECT_ tmp, e, ans, ptr;
-  xmlXPathObjectPtr obj;
+  USER_OBJECT_ e, ans;
+//  xmlXPathObjectPtr obj;
   int errorOccurred;
   int i, j;
 
@@ -436,7 +444,7 @@ RXSLT_callNamedFunction(const char *name, xmlXPathParserContextPtr ctxt, int nar
   PROTECT(e = allocVector(LANGSXP, 2));
   SETCAR(e, Rf_install((char *) name));
   SETCAR(CDR(e), tmp = NEW_CHARACTER(1));
-  obj = valuePop(ctxt);
+  obj = valuePop(ctxt); 
   SET_STRING_ELT(tmp, 0, COPY_TO_USER_STRING(xmlXPathCastToString(obj)));
 #else
   PROTECT(e = allocVector(LANGSXP, nargs+1));
@@ -449,7 +457,7 @@ RXSLT_callNamedFunction(const char *name, xmlXPathParserContextPtr ctxt, int nar
       ans = CDR(ans);
     }
     SETCAR(ans, tmp = NEW_CHARACTER(1));
-    obj = valuePop(ctxt);
+    obj = valuePop(ctxt); 
     SET_STRING_ELT(tmp, 0, COPY_TO_USER_STRING(xmlXPathCastToString(obj)));
   }
 #else
@@ -462,10 +470,10 @@ RXSLT_callNamedFunction(const char *name, xmlXPathParserContextPtr ctxt, int nar
   }
 
 #endif
-#endif
+#endif  
   ans = R_tryEval(e, R_GlobalEnv, &errorOccurred);
   if(errorOccurred) {
-      RXSLT_Error(ctxt, "error in call to R function");
+      RXSLT_Error(ctxt, "error in call to R function"); 
   } else {
      PROTECT(ans);
      valuePush(ctxt, convertToXPath(ctxt, ans));
@@ -544,7 +552,7 @@ RXSLT_internalSource(const char *fileName)
   SETCAR(CDR(e), tmp = NEW_CHARACTER(1));
 
   SET_STRING_ELT(tmp, 0, COPY_TO_USER_STRING(fileName));
-
+  
   ans = R_tryEval(e, R_GlobalEnv, &errorOccurred);
   UNPROTECT(1);
   return(errorOccurred ? FALSE : TRUE);
@@ -563,7 +571,7 @@ RXSLT_source(xmlXPathParserContextPtr ctxt, int nargs)
    Rboolean ok;
    xmlXPathObjectPtr obj;
 
-   obj = valuePop(ctxt);
+   obj = valuePop(ctxt); 
    ok = RXSLT_internalSource(xmlXPathCastToString(obj));
    valuePush(ctxt, xmlXPathNewBoolean(ok));
 }
@@ -656,7 +664,7 @@ R_callInitializeExtensionFunc(xsltTransformContextPtr ctxt, const xmlChar *URI)
 
   R_tryEval(e, R_GlobalEnv, &errorOccurred);
 
-  UNPROTECT(1);
+  UNPROTECT(1); 
 }
 
 #define R_REGISTER_FUNCTIONS
@@ -668,11 +676,11 @@ R_callInitializeExtensionFunc(xsltTransformContextPtr ctxt, const xmlChar *URI)
  */
 typedef struct _RXSLTFunction RXSLTFunction;
 
-struct _RXSLTFunction
+struct _RXSLTFunction 
 {
     const char *name;
     USER_OBJECT_ fun;
-    RXSLTFunction *next;
+    RXSLTFunction *next;   
 };
 
 static RXSLTFunction FunTable = {NULL, NULL, NULL};
@@ -688,7 +696,7 @@ RXSLT_addFunction(const char *name, USER_OBJECT_ fun)
 	}
         prev = ptr;
 	ptr = ptr->next;
-    }
+    } 
 
     if(!ptr) {
 	ptr = (RXSLTFunction *) malloc(sizeof(RXSLTFunction));
@@ -701,36 +709,36 @@ RXSLT_addFunction(const char *name, USER_OBJECT_ fun)
     }
 
     if(fun != NULL_USER_OBJECT)
-	R_PreserveObject(fun);
+	R_PreserveObject(fun); 
     ptr->fun = fun;
     if(!ptr->name)
 	ptr->name = strdup(name);
 
-    return;
+    return; 
 }
 
 USER_OBJECT_
 RXSLT_findFunction(const char *name, Rboolean *hasEntry)
 {
-    RXSLTFunction *ptr = &FunTable;
+    RXSLTFunction *ptr = &FunTable;  
     while(ptr) {
         if(ptr->name && strcmp(ptr->name, name) == 0) {
 #ifdef XSLT_DEBUG
     fprintf(stderr, "Found function %s\n",name);fflush(stderr);
 #endif
-            if(hasEntry)
+            if(hasEntry) 
 		*hasEntry = TRUE;
 	    return(ptr->fun);
 	}
 	ptr = ptr->next;
     }
 
-   if(hasEntry)
+   if(hasEntry) 
        *hasEntry = FALSE;
     return(NULL);
 }
 
-void
+void 
 RXSLT_genericFunctionCall(xmlXPathParserContextPtr ctxt, int nargs)
 {
   USER_OBJECT_ e, ans, tmp, fun;
@@ -738,7 +746,7 @@ RXSLT_genericFunctionCall(xmlXPathParserContextPtr ctxt, int nargs)
   int i, errorOccurred = 0, addContext = 0;
   Rboolean hasEntry;
 
-    /* Count the arguments and store them for use in the very near future.
+    /* Count the arguments and store them for use in the very near future. 
        Note that we pop them off the stack and put them into a list in reverse order
        as the last argument in the call is on the top of the stack, etc. */
   xpathArgs = (xmlXPathObjectPtr*) malloc(nargs * sizeof(xmlXPathObjectPtr));
@@ -758,7 +766,7 @@ RXSLT_genericFunctionCall(xmlXPathParserContextPtr ctxt, int nargs)
 	  fprintf(stderr, "Calling %s by name\n", ctxt->context->function);fflush(stderr);
 #endif
         /* If we got the R value NULL back, then call by name! */
-      if(ans == NULL || ans == NULL_USER_OBJECT)
+      if(ans == NULL || ans == NULL_USER_OBJECT) 
 	  ans = fun = Rf_findFun(Rf_install(ctxt->context->function), R_GlobalEnv);
 
       addContext = OBJECT(fun) && R_isInstanceOf(fun, "XSLTContextFunction");
@@ -778,7 +786,7 @@ RXSLT_genericFunctionCall(xmlXPathParserContextPtr ctxt, int nargs)
   /* Put the XSL arguments into the R call, converting them from XSL to R as we go */
 
   for(i = 0 ; i < nargs; i++) {
-    obj = xpathArgs[i];
+    obj = xpathArgs[i]; 
     SETCAR(tmp, convertFromXPath(ctxt, obj));
     tmp = CDR(tmp);
   }
@@ -787,7 +795,7 @@ RXSLT_genericFunctionCall(xmlXPathParserContextPtr ctxt, int nargs)
   ans = R_tryEval(e, R_GlobalEnv, &errorOccurred);
 
   if(errorOccurred) {
-      /* Throw an error! */
+      /* Throw an error! */    
       RXSLT_Error(ctxt, "error when evaluating call to R function");
   } else {
      xmlXPathObjectPtr  val;
@@ -807,7 +815,7 @@ RXSLT_genericFunctionCall(xmlXPathParserContextPtr ctxt, int nargs)
 
 
 USER_OBJECT_
-RXSLT_registerFunction(USER_OBJECT_ name, USER_OBJECT_ fun, USER_OBJECT_ uri, USER_OBJECT_ symbol,
+RXSLT_registerFunction(USER_OBJECT_ name, USER_OBJECT_ fun, USER_OBJECT_ uri, USER_OBJECT_ symbol, 
                         USER_OBJECT_ context)
 {
     xsltTransformContextPtr ctxt = NULL;
@@ -815,7 +823,7 @@ RXSLT_registerFunction(USER_OBJECT_ name, USER_OBJECT_ fun, USER_OBJECT_ uri, US
 
     if(GET_LENGTH(context)) {
 	ctxt = (xsltTransformContextPtr)  R_ExternalPtrAddr(context);
-    }
+    } 
 
     if(!ctxt)
       ctxt  = getTransformCtxt();
@@ -840,7 +848,7 @@ RXSLT_registerFunction(USER_OBJECT_ name, USER_OBJECT_ fun, USER_OBJECT_ uri, US
 #endif
     if(ctxt)
         xsltRegisterExtFunction(ctxt, CHAR_DEREF(STRING_ELT(name, 0)),
-	   	  	           CHAR_DEREF(STRING_ELT(uri, 0)),
+	   	  	           CHAR_DEREF(STRING_ELT(uri, 0)), 
                                    sym);
     else
         xsltRegisterExtModuleFunction((const xmlChar *) CHAR_DEREF(STRING_ELT(name, 0)),
@@ -891,7 +899,7 @@ R_xslGetGlobalVariableNames(SEXP r_ctxt)
     ctxt = (xmlXPathParserContextPtr) R_ExternalPtrAddr(r_ctxt);
     xslCtxt = xsltXPathGetTransformContext(ctxt);
 
-    if(!xslCtxt || !xslCtxt->globalVars)
+    if(!xslCtxt || !xslCtxt->globalVars) 
 	return(NEW_CHARACTER(0));
 
     n = xmlHashSize(xslCtxt->globalVars);

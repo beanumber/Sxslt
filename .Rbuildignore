@@ -1,0 +1,4 @@
+src/Makevars$
+DESCRIPTION.in
+^.*\.Rproj$
+^\.Rproj\.user$
